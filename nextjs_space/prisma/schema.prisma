@@ -1,0 +1,93 @@
+generator client {
+    provider = "prisma-client-js"
+    binaryTargets = ["native"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  STUDENT
+  TEACHER
+}
+
+model User {
+  id             String    @id @default(cuid())
+  name           String
+  email          String    @unique
+  hashedPassword String
+  role           UserRole  @default(STUDENT)
+  yearLevel      Int?      
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Student relations
+  sessions        PracticeSession[]
+  studentAnswers  StudentAnswer[]
+
+  // Teacher-student relations
+  assignedTeacher  User?   @relation("TeacherStudents", fields: [teacherId], references: [id])
+  teacherId        String?
+  students         User[]  @relation("TeacherStudents")
+
+  @@index([email])
+  @@index([role])
+  @@index([teacherId])
+}
+
+model PracticeSession {
+  id          String   @id @default(cuid())
+  userId      String
+  yearLevel   Int
+  topic       String
+  duration    Int      // duration in minutes
+  totalScore  Int      @default(0)
+  maxScore    Int      @default(0)
+  completed   Boolean  @default(false)
+  startedAt   DateTime @default(now())
+  endedAt     DateTime?
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questions Question[]
+
+  @@index([userId])
+  @@index([startedAt])
+}
+
+model Question {
+  id              String   @id @default(cuid())
+  sessionId       String
+  questionText    String
+  correctAnswer   String
+  difficulty      Int      @default(1) // 1-5
+  questionNumber  Int
+  topic           String
+  createdAt       DateTime @default(now())
+
+  session        PracticeSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  studentAnswer  StudentAnswer?
+
+  @@index([sessionId])
+}
+
+model StudentAnswer {
+  id            String   @id @default(cuid())
+  questionId    String   @unique
+  userId        String
+  answerText    String
+  workingShown  String?  
+  marksAwarded  Int      @default(0)
+  maxMarks      Int      @default(1)
+  isCorrect     Boolean  @default(false)
+  feedback      String?
+  createdAt     DateTime @default(now())
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([questionId])
+}

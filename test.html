@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Interactive Straight Line Angles</title>
+    <!-- Load stable production assets from CDN -->
+    <link rel="stylesheet" type="text/css" href="https://jsdelivr.net" />
+    <script type="text/javascript" src="https://jsdelivr.net"></script>
+    <style>
+        body { font-family: system-ui, sans-serif; text-align: center; margin: 20px; background: #fafafa; }
+        #jxgbox { 
+            width: 600px; 
+            height: 400px; 
+            margin: 20px auto; 
+            border-radius: 8px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
+            background-color: #ffffff;
+        }
+        .instructions { color: #555; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+    <h2>Geometry: Angles on a Straight Line</h2>
+    <p class="instructions">💡 <strong>Action:</strong> Drag the blue point <b>C</b> to change the angles dynamically!</p>
+
+    <!-- Canvas target -->
+    <div id="jxgbox" class="jxgbox"></div>
+
+    <script type="text/javascript">
+        window.onload = function() {
+            // 1. Initialize the board layout
+            const board = JXG.JSXGraph.initBoard('jxgbox', {
+                boundingbox: [-5, 4, 5, -3],
+                axis: false,
+                showCopyright: false,
+                keepaspectratio: true
+            });
+
+            // 2. Base line invisible anchors
+            const pA = board.create('point', [-4, 0], { visible: false });
+            const pOrigin = board.create('point', [0, 0], { visible: false });
+            const pB = board.create('point', [4, 0], { visible: false });
+
+            // Draw the main straight line base
+            const straightLine = board.create('line', [pA, pB], { 
+                strokeColor: '#333333', 
+                strokeWidth: 3, 
+                fixed: true 
+            });
+
+            // 3. Draggable point C
+            const pC = board.create('point', [1.7, 3.0], { 
+                name: 'C', 
+                color: '#007acc', 
+                size: 5,
+                fillColor: '#ffffff'
+            });
+            
+            // Connecting ray line segment
+            const ray = board.create('segment', [pOrigin, pC], { 
+                strokeColor: '#333333', 
+                strokeWidth: 3 
+            });
+
+            // 4. Right angle display loop
+            const angleRight = board.create('angle', [pB, pOrigin, pC], {
+                radius: 1,
+                strokeColor: '#1f77b4',
+                fillColor: '#e2effa',
+                name: function() {
+                    let deg = Math.round(angleRight.Value() * 180 / Math.PI);
+                    return deg + '°';
+                },
+                label: { offset:, color: '#1f77b4', fontSize: 16, fontweight: 'bold' }
+            });
+
+            // 5. Left angle question placeholder
+            const angleLeft = board.create('angle', [pC, pOrigin, pA], {
+                radius: 1,
+                strokeColor: '#d9534f',
+                fillColor: '#fce8e6',
+                name: '?', 
+                label: { offset: [-30, 15], color: '#d9534f', fontSize: 18, fontweight: 'bold' }
+            });
+
+            // 6. 180 degree semi-circle tracking block
+            const straightAngleArc = board.create('angle', [pA, pOrigin, pB], {
+                radius: 0.8,
+                strokeColor: '#d9534f',
+                fillColor: 'none',
+                strokeWidth: 2,
+                name: 'Straight line = 180°',
+                label: { offset: [-65, -25], color: '#666', fontSize: 13 }
+            });
+
+            board.update();
+        };
+    </script>
+</body>
+</html>
