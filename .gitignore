@@ -1,1 +1,8 @@
 node_modules/
+nextjs_space/.next/
+.DS_Store
+**/.DS_Store
+nextjs_space/.idea/
+.idea/
+nextjs_space/.env
+nextjs_space/.env*.local
