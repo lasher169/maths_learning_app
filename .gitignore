@@ -7,3 +7,4 @@ nextjs_space/.idea/
 nextjs_space/.env
 .abacusai/
 nextjs_space/.env*.local
+.env
