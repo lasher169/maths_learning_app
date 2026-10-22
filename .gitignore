@@ -13,6 +13,7 @@ nextjs_space/.env*.local
 .abacus.donotdelete
 .aider.chat.history.md
 .aider.input.history
+/README.md
 
 # Generated / churn files
 package-lock.json
