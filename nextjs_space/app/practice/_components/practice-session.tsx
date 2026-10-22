@@ -20,6 +20,7 @@ interface PracticeSessionProps {
 interface QuestionData {
   question: string;
   correctAnswer: string;
+  workedSolution?: string;
   hint: string;
   difficulty: number;
   maxMarks: number;
@@ -189,7 +190,7 @@ console.log('Generated question result:', result);
         studentAnswer: answer,
         workingShown: working || null,
         yearLevel: sessionData?.yearLevel,
-        topic: sessionData?.topic,
+        workedSolution: currentQuestion?.workedSolution ?? null,
       });
 
       if (result) {

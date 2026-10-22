@@ -8,8 +8,7 @@ cp .env.local.example .env.local  &&  yarn install  &&  yarn prisma generate  &&
 
 ## Key env vars
 - `DATABASE_URL` — Supabase pgbouncer (port 6543). `DIRECT_URL` — direct session (port 5432).
-- `ABACUSAI_API_KEY` — required for LLM calls.
-- `.env` `LLM_PROVIDER` and `OLLAMA_*` vars exist but are **never used by code**. Ignore them.
+- `LLM_API_URL`, `LLM_API_KEY` — single OpenAI-compatible chat-completions endpoint used for all LLM calls (default: local MLX server at `http://localhost:8080/v1/chat/completions`). No `model` field is sent; the server uses its loaded default model.
 
 ## Architecture
 
@@ -18,7 +17,7 @@ cp .env.local.example .env.local  &&  yarn install  &&  yarn prisma generate  &&
 | Next.js 14 App Router (App Router) | `app/` | `distDir` configurable via `NEXT_DIST_DIR`. `output` mode configurable via `NEXT_OUTPUT_MODE` (for Raspberry Pi embed). `images: { unoptimized: true }`. |
 | Auth: NextAuth v4 JWT strategy | `lib/auth-options.ts` | Credentials only. `middleware.ts` protects `/dashboard`, `/practice`, `/results`, `/students`. |
 | ORM: Prisma 6 | `prisma/schema.prisma` | 4 models: `User`, `PracticeSession`, `Question`, `StudentAnswer`. Supabase PostgreSQL with pgbouncer required. |
-| AI: Abacus.AI (Abacus.AI) | `app/api/generate-question/route.ts:72`, `app/api/evaluate-answer/route.ts:48` | Model: `gpt-5.4-mini`. Calls `https://apps.abacus.ai/v1/chat/completions` via `fetch()` with SSE streaming. |
+| AI: OpenAI-compatible LLM | `app/api/generate-question/route.ts:72`, `app/api/evaluate-answer/route.ts:48` | Calls `process.env.LLM_API_URL` via `fetch()` with SSE streaming; model from `LLM_MODEL`, key from `LLM_API_KEY`. |
 | UI: shadcn/ui | `components/ui/` (~50 components) | Config at `components.json`. prakis: `@/components/ui`, utils at `@/lib/utils`. |
 | Theme: CSS variables (darkMode: "class") | `tailwind.config.ts` | Fonts: DM Sans (body), Plus Jakarta Sans (display), JetBrains Mono (mono). |
 
@@ -39,8 +38,7 @@ cp .env.local.example .env.local  &&  yarn install  &&  yarn prisma generate  &&
   - `streamResponse('/api/generate-question', …)` — line 140
   - `streamResponse('/api/evaluate-answer', …)` — line 186
 - The `streamResponse()` client helper (line 86-127) parses SSE from Next.js routes.
-- Both server routes (route.ts line 72, evaluate line 48) `fetch()` to Abacus.AI.
-- `app/layout.tsx:34` loads an Abacus.AI script tag (`appllm-lib.js`) but it appears **unused** — check before relying on it.
+- Both server routes (route.ts line 72, evaluate line 48) `fetch()` to `process.env.LLM_API_URL`.
 - `generate-question` requests `response_format: { type: 'json_object' }`, `stream: true`. For geometry/shape topics it adds a `figureCode` SVG field (SVG `viewBox="0 0 400 400"`).
 
 ## Incremental Prisma binary

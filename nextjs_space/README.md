@@ -5,7 +5,7 @@ An adaptive mathematics learning platform designed for Australian students (Year
 ## Features
 
 - **Adaptive Difficulty** - Questions start easy and progressively get harder. If a student struggles, difficulty decreases to maintain engagement.
-- **AI-Powered Questions** - Uses Abacus.AI LLM API to generate curriculum-aligned maths questions for Years 1-12.
+- **AI-Powered Questions** - Uses an OpenAI-compatible LLM API to generate curriculum-aligned maths questions for Years 1-12.
 - **Instant Feedback** - Each answer is evaluated by AI with detailed explanations and encouragement.
 - **Working Shown** - Students can show their working for partial credit.
 - **Timed Sessions** - Choose practice duration (5, 10, 15, 20, or 30 minutes).
@@ -19,7 +19,7 @@ An adaptive mathematics learning platform designed for Australian students (Year
 - **Database**: Supabase (PostgreSQL)
 - **ORM**: Prisma
 - **Auth**: NextAuth.js v4
-- **AI**: Abacus.AI LLM API (GPT-4 Mini)
+- **AI**: Any OpenAI-compatible LLM API (e.g. local Ollama server)
 - **Styling**: Tailwind CSS
 
 ---
@@ -32,7 +32,7 @@ An adaptive mathematics learning platform designed for Australian students (Year
 2. **Raspberry Pi OS** (64-bit recommended) or Ubuntu Server
 3. **Node.js 18+** installed
 4. **A Supabase project** (free tier works fine)
-5. **An Abacus.AI account** with API key
+5. **An OpenAI-compatible LLM endpoint** (e.g. a local Ollama server, or any hosted provider's chat-completions URL)
 
 ### Step 1: Install Node.js on Raspberry Pi
 
@@ -96,8 +96,10 @@ NEXTAUTH_SECRET="paste-your-generated-secret"
 # Your Raspberry Pi's local URL
 NEXTAUTH_URL="http://localhost:3000"
 
-# Your Abacus.AI API key
-ABACUSAI_API_KEY="your-api-key"
+# Single OpenAI-compatible LLM endpoint used for both question generation and answer evaluation
+LLM_API_URL="http://localhost:11434/v1/chat/completions"
+LLM_API_KEY="your-api-key"
+LLM_MODEL="qwen2.5:7b"
 ```
 
 > **Tip**: Also create a `.env` file with the same content (Prisma reads from `.env`):
@@ -271,8 +273,8 @@ nextjs_space/
   ```
 
 ### "LLM API not working"
-- Verify your ABACUSAI_API_KEY is valid
-- Check the API is reachable: `curl https://apps.abacus.ai/v1/models -H "Authorization: Bearer YOUR_KEY"`
+- Verify `LLM_API_URL`, `LLM_API_KEY`, and `LLM_MODEL` are set correctly in `.env`
+- Check the endpoint is reachable, e.g. for a local Ollama server: `curl http://localhost:11434/v1/models`
 
 ### Accessing from other devices on your network
 - Use your Pi's local IP address (e.g., `http://192.168.1.100:3000`)

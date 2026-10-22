@@ -64,25 +64,25 @@ Use this exact JSON structure:
 {
   "question": "The question text",
   "correctAnswer": "The correct answer",
+  "workedSolution": "Step-by-step working showing how to arrive at the correct answer",
   "hint": "A helpful hint for the student",
   "difficulty": ${diffLevel},
   "maxMarks": 1${isShapeQuestion ? ',\n  "figureCode": "<svg>...</svg>"' : ''}
 }`;
 
-    const response = await fetch('https://apps.abacus.ai/v1/chat/completions', {
+    const response = await fetch(process.env.LLM_API_URL as string, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.ABACUSAI_API_KEY}`,
+        'Authorization': `Bearer ${process.env.LLM_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'gpt-5.4-mini',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: `Generate a Year ${yearLevel} ${topic} question at difficulty level ${diffLevel}/5.` },
         ],
-        stream: true,
-        max_tokens: isShapeQuestion ? 2000 : 1000,
+        stream: false,
+        max_tokens: isShapeQuestion ? 2500 : 1500,
         response_format: { type: 'json_object' },
       }),
     });
@@ -93,66 +93,27 @@ Use this exact JSON structure:
       return new Response(JSON.stringify({ error: 'Failed to generate question from LLM API' }), { status: 500 });
     }
 
-    const reader = response.body?.getReader();
-    if (!reader) {
-      return new Response(JSON.stringify({ error: 'No response body from LLM' }), { status: 500 });
-    }
-
-    const decoder = new TextDecoder();
     const encoder = new TextEncoder();
 
     const stream = new ReadableStream({
       async start(controller) {
-        let buffer = '';
-        let partialRead = '';
         try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            partialRead += decoder.decode(value, { stream: true });
-            let lines = partialRead.split('\n');
-            partialRead = lines.pop() ?? '';
-            for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                const data = line.slice(6);
-                if (data === '[DONE]') {
-                   try {
-                     const finalResult = JSON.parse(buffer);
-                     const finalData = JSON.stringify({
-                       status: 'completed',
-                       result: finalResult,
-                     });
-                     controller.enqueue(encoder.encode(`data: ${finalData}\n\n`));
-                   } catch (e) {
-                     const errorData = JSON.stringify({ status: 'error', message: 'Failed to parse question JSON' });
-                     controller.enqueue(encoder.encode(`data: ${errorData}\n\n`));
-                   }
-                   return;
-                }
-                try {
-                  const parsed = JSON.parse(data);
-                  buffer += parsed?.choices?.[0]?.delta?.content ?? '';
-                  const progressData = JSON.stringify({ status: 'processing', message: 'Generating question...' });
-                  controller.enqueue(encoder.encode(`data: ${progressData}\n\n`));
-                } catch (e) {
-                  // skip
-                }
-              }
-            }
+          const data = await response.json();
+          const content = data?.choices?.[0]?.message?.content ?? '';
+          let finalResult: unknown;
+          try {
+            finalResult = JSON.parse(content);
+          } catch {
+            const errorData = JSON.stringify({ status: 'error', message: 'Failed to parse question JSON' });
+            controller.enqueue(encoder.encode(`data: ${errorData}\n\n`));
+            return;
           }
-          // If stream ended without [DONE]
-          if (buffer) {
-            try {
-              const finalResult = JSON.parse(buffer);
-              const finalData = JSON.stringify({ status: 'completed', result: finalResult });
-              controller.enqueue(encoder.encode(`data: ${finalData}\n\n`));
-            } catch (e) {
-              const errorData = JSON.stringify({ status: 'error', message: 'Failed to parse question' });
-              controller.enqueue(encoder.encode(`data: ${errorData}\n\n`));
-            }
-          }
+          const progressData = JSON.stringify({ status: 'processing', message: 'Generating question...' });
+          controller.enqueue(encoder.encode(`data: ${progressData}\n\n`));
+          const finalData = JSON.stringify({ status: 'completed', result: finalResult });
+          controller.enqueue(encoder.encode(`data: ${finalData}\n\n`));
         } catch (error) {
-          console.error('Stream error:', error);
+          console.error('LLM response error:', error);
           const errorData = JSON.stringify({ status: 'error', message: 'Stream processing error' });
           controller.enqueue(encoder.encode(`data: ${errorData}\n\n`));
         } finally {
@@ -160,8 +121,6 @@ Use this exact JSON structure:
         }
       },
     });
-
-    console.log('Streaming response initiated for question generation.',stream);
 
     return new Response(stream, {
       headers: {
