@@ -8,3 +8,14 @@ nextjs_space/.env
 .abacusai/
 nextjs_space/.env*.local
 .env
+
+# Workspace/tool files (untracked, not part of the app)
+.abacus.donotdelete
+.aider.chat.history.md
+.aider.input.history
+
+# Generated / churn files
+package-lock.json
+nextjs_space/package-lock.json
+nextjs_space/tsconfig.tsbuildinfo
+*.tsbuildinfo
